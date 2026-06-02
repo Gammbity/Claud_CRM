@@ -1,0 +1,137 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  admin
+  sales
+  viewer
+}
+
+enum LeadStatus {
+  new
+  contacted
+  proposal
+  won
+  lost
+}
+
+enum CustomerStatus {
+  active
+  inactive
+  prospect
+}
+
+enum OrderStatus {
+  pending
+  confirmed
+  shipped
+  delivered
+  cancelled
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(sales)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  leads  Lead[]
+  orders Order[]
+
+  @@map("users")
+}
+
+model Customer {
+  id          String         @id @default(cuid())
+  companyName String
+  contactName String
+  phone       String
+  email       String         @unique
+  address     String?
+  city        String?
+  country     String         @default("Uzbekistan")
+  status      CustomerStatus @default(prospect)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  leads  Lead[]
+  orders Order[]
+
+  @@map("customers")
+}
+
+model Lead {
+  id         String     @id @default(cuid())
+  title      String
+  status     LeadStatus @default(new)
+  value      Decimal    @default(0) @db.Decimal(12, 2)
+  notes      String?
+  customerId String
+  assignedTo String
+  closedAt   DateTime?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  assignee User     @relation(fields: [assignedTo], references: [id])
+
+  @@map("leads")
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  sku         String   @unique
+  description String?
+  category    String
+  price       Decimal  @db.Decimal(10, 2)
+  stock       Int      @default(0)
+  unit        String   @default("pcs")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orderItems OrderItem[]
+
+  @@map("products")
+}
+
+model Order {
+  id         String      @id @default(cuid())
+  orderNumber String     @unique
+  customerId String
+  assignedTo String
+  status     OrderStatus @default(pending)
+  totalAmount Decimal    @db.Decimal(12, 2)
+  notes      String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  customer Customer    @relation(fields: [customerId], references: [id])
+  assignee User        @relation(fields: [assignedTo], references: [id])
+  items    OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int
+  unitPrice Decimal @db.Decimal(10, 2)
+  total     Decimal @db.Decimal(12, 2)
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}

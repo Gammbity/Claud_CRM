@@ -1,0 +1,31 @@
+# BTEC C.M3 & C.D2 — Load Balancing Demo with Multiple Backend Instances
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.scale.yml up --scale backend=3
+#
+# After running, test load balancing:
+#   for i in {1..9}; do curl -s http://localhost/api/health | python3 -m json.tool | grep instance; done
+#
+# Each response will show a DIFFERENT instance hostname — proving round-robin load balancing
+
+version: '3.9'
+
+services:
+  backend:
+    # No container_name — allows multiple instances
+    # Nginx upstream resolves 'backend' to ALL container IPs via Docker DNS
+    environment:
+      NODE_ENV: production
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+  nginx:
+    # Override nginx.conf to use upstream DNS resolution for dynamic scaling
+    volumes:
+      - ./nginx/nginx-scale.conf:/etc/nginx/nginx.conf:ro
