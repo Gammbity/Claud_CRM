@@ -257,19 +257,30 @@ jobs:
             # ── 7. Pull new images ────────────────────────────────────
             sudo docker compose pull backend frontend
 
-            # ── 8. Zero-downtime rolling update ──────────────────────
+            # ── 8. Start postgres first (required by backend) ─────────
+            sudo docker compose up -d postgres
+            echo "Waiting for postgres to be healthy..."
+            timeout 60 sh -c \
+              'until sudo docker compose ps postgres 2>/dev/null | grep -q "(healthy)"; do sleep 3; done' \
+              || echo "Postgres health timeout — continuing anyway"
+
+            # ── 9. Zero-downtime rolling backend update ───────────────
             sudo docker compose up -d --no-deps --scale backend=2 backend
-            sleep 15
+            sleep 20
             sudo docker compose up -d --no-deps --scale backend=1 backend
 
-            # ── 9. Update frontend & nginx ────────────────────────────
+            # ── 10. Update frontend ───────────────────────────────────
             sudo docker compose up -d --no-deps frontend
-            sudo docker compose exec -T nginx nginx -s reload
 
-            # ── 10. Run pending DB migrations ─────────────────────────
+            # ── 11. Start / reload nginx ──────────────────────────────
+            sudo docker compose up -d --no-deps nginx
+            sleep 5
+            sudo docker compose exec -T nginx nginx -s reload 2>/dev/null || true
+
+            # ── 12. Run pending DB migrations ─────────────────────────
             sudo docker compose run --rm migrate
 
-            # ── 11. Cleanup old images ────────────────────────────────
+            # ── 13. Cleanup old images ────────────────────────────────
             sudo docker image prune -f
 
             echo "Deployment complete — SHA: ${IMAGE_TAG}"

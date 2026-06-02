@@ -2,8 +2,6 @@
 # Services: postgres, backend, frontend, nginx
 # BTEC A.P2: Demonstrates internal container network communication
 
-version: '3.9'
-
 networks:
   crm-network:
     driver: bridge
