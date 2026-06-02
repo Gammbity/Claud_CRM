@@ -277,10 +277,7 @@ jobs:
             sleep 5
             sudo docker compose exec -T nginx nginx -s reload 2>/dev/null || true
 
-            # ── 12. Run pending DB migrations ─────────────────────────
-            sudo docker compose run --rm migrate
-
-            # ── 13. Cleanup old images ────────────────────────────────
+            # ── 12. Cleanup old images ─────────────────────────────────
             sudo docker image prune -f
 
             echo "Deployment complete — SHA: ${IMAGE_TAG}"

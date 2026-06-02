@@ -89,21 +89,6 @@ services:
     restart: "no"
 
   # ─────────────────────────────────────────
-  # DB Migrations (runs once per deploy)
-  # ─────────────────────────────────────────
-  migrate:
-    image: ${REGISTRY:-ghcr.io/gammbity/cloudcrm}/crm-backend:${IMAGE_TAG:-latest}
-    command: npx prisma migrate deploy
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-crmuser}:${POSTGRES_PASSWORD:-crmpassword}@postgres:5432/${POSTGRES_DB:-crmdb}
-    networks:
-      - crm-network
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: "no"
-
-  # ─────────────────────────────────────────
   # Frontend (React + Vite → Nginx static)
   # ─────────────────────────────────────────
   frontend:
