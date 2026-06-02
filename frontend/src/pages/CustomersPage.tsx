@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { customersApi } from '../api/endpoints';
 import { useAuth } from '../hooks/useAuth';
@@ -64,7 +64,7 @@ export default function CustomersPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['customers'] }),
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (editId) updateMut.mutate({ id: editId, data: form });
     else createMut.mutate(form);

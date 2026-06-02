@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import Layout from './components/Layout';
@@ -8,7 +9,7 @@ import LeadsPage from './pages/LeadsPage';
 import ProductsPage from './pages/ProductsPage';
 import OrdersPage from './pages/OrdersPage';
 
-function PrivateRoute({ children }: { children: React.ReactNode }) {
+function PrivateRoute({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   return user ? <>{children}</> : <Navigate to="/login" replace />;
 }

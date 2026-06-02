@@ -1,7 +1,8 @@
+import type { ElementType } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { dashboardApi, healthApi } from '../api/endpoints';
 import {
-  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend,
 } from 'recharts';
 import { Users, TrendingUp, ShoppingCart, DollarSign, Activity } from 'lucide-react';
@@ -15,7 +16,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 function StatCard({ label, value, icon: Icon, color }: {
-  label: string; value: string | number; icon: React.ElementType; color: string;
+  label: string; value: string | number; icon: ElementType; color: string;
 }) {
   return (
     <div className="card flex items-center gap-4">

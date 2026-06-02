@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { productsApi } from '../api/endpoints';
 import { useAuth } from '../hooks/useAuth';
@@ -58,7 +58,7 @@ export default function ProductsPage() {
     setShowModal(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     const payload = { ...form, price: parseFloat(form.price), stock: parseInt(form.stock) };
     if (editId) updateMut.mutate({ id: editId, data: payload });
