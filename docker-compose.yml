@@ -38,13 +38,14 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
-    ports:
-      - "5432:5432"   # Exposed only for dev; remove in production
+    # ports:
+    #   - "5432:5432"  # Uncomment only for local dev — never expose in production
 
   # ─────────────────────────────────────────
   # Backend API (Express + Prisma)
   # ─────────────────────────────────────────
   backend:
+    image: ${REGISTRY:-ghcr.io/gammbity/cloudcrm}/crm-backend:${IMAGE_TAG:-latest}
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -90,9 +91,25 @@ services:
     restart: "no"
 
   # ─────────────────────────────────────────
+  # DB Migrations (runs once per deploy)
+  # ─────────────────────────────────────────
+  migrate:
+    image: ${REGISTRY:-ghcr.io/gammbity/cloudcrm}/crm-backend:${IMAGE_TAG:-latest}
+    command: npx prisma migrate deploy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-crmuser}:${POSTGRES_PASSWORD:-crmpassword}@postgres:5432/${POSTGRES_DB:-crmdb}
+    networks:
+      - crm-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  # ─────────────────────────────────────────
   # Frontend (React + Vite → Nginx static)
   # ─────────────────────────────────────────
   frontend:
+    image: ${REGISTRY:-ghcr.io/gammbity/cloudcrm}/crm-frontend:${IMAGE_TAG:-latest}
     build:
       context: ./frontend
       dockerfile: Dockerfile
