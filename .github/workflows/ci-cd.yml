@@ -154,7 +154,11 @@ jobs:
 
       - name: Extract metadata
         id: meta
-        run: echo "version=${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
+        run: |
+          echo "version=${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
+          REPO_LC=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "backend=${{ env.REGISTRY }}/${REPO_LC}/crm-backend" >> $GITHUB_OUTPUT
+          echo "frontend=${{ env.REGISTRY }}/${REPO_LC}/crm-frontend" >> $GITHUB_OUTPUT
 
       - name: Build & push backend
         uses: docker/build-push-action@v5
@@ -162,8 +166,8 @@ jobs:
           context: ./backend
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_BACKEND }}:${{ steps.meta.outputs.version }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_BACKEND }}:latest
+            ${{ steps.meta.outputs.backend }}:${{ steps.meta.outputs.version }}
+            ${{ steps.meta.outputs.backend }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
           target: production
@@ -174,8 +178,8 @@ jobs:
           context: ./frontend
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_FRONTEND }}:${{ steps.meta.outputs.version }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_FRONTEND }}:latest
+            ${{ steps.meta.outputs.frontend }}:${{ steps.meta.outputs.version }}
+            ${{ steps.meta.outputs.frontend }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
           target: production
@@ -243,7 +247,7 @@ jobs:
 
             # ── 6. Set environment variables ──────────────────────────
             export IMAGE_TAG=${{ needs.build.outputs.image-tag }}
-            export REGISTRY=ghcr.io/${{ github.repository_owner }}
+            export REGISTRY=ghcr.io/$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
 
             # Write .env for docker compose
             cat > .env <<EOF
