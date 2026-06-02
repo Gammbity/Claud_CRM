@@ -175,7 +175,7 @@ jobs:
 
   # ─────────────────────────────────────────
   # Stage 4: Deploy to AWS EC2
-  # Only on main branch pushes
+  # Only on main branch pushesa
   # BTEC D.P8: Automated zero-downtime deployment
   # ─────────────────────────────────────────
   deploy:
