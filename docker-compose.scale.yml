@@ -26,6 +26,6 @@ services:
           memory: 128M
 
   nginx:
-    # Override nginx.conf to use upstream DNS resolution for dynamic scaling
+    # Override nginx.conf to use upstream DNS resolution for dynamic scalinga
     volumes:
       - ./nginx/nginx-scale.conf:/etc/nginx/nginx.conf:ro
