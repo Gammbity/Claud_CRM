@@ -16,6 +16,7 @@ COPY src ./src
 
 RUN npm run prisma:generate
 RUN npm run build
+RUN npx tsc --project tsconfig.seed.json
 
 # ---- Stage 3: Production-only node_modules ----
 FROM deps AS prod-deps
@@ -35,6 +36,7 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY package.json ./
 COPY entrypoint.sh ./
+COPY --from=builder /app/dist/seed ./dist/seed
 
 RUN chmod +x entrypoint.sh && chown -R nodeuser:nodejs /app
 
