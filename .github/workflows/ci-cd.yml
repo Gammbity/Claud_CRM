@@ -232,7 +232,7 @@ jobs:
             sudo mkdir -p /opt/crm-cloud
             sudo chown "$USER":"$USER" /opt/crm-cloud
 
-            # ── 4. Pull latest code ───────────────────────────────────
+            # ── 4. Pull latest codea ───────────────────────────────────
             if [ ! -d /opt/crm-cloud/.git ]; then
               git clone https://github.com/${{ github.repository }}.git /opt/crm-cloud
             fi
