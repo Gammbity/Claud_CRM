@@ -67,7 +67,7 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-500 text-sm mt-0.5">Wholesale Fashion CRM</p>
+          <p className="text-gray-500 text-sm mt-0.5">Wholesale Fashion CRM Overview</p>
         </div>
         {health && (
           <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg">
