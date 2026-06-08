@@ -232,11 +232,13 @@ jobs:
             sudo mkdir -p /opt/crm-cloud
             sudo chown "$USER":"$USER" /opt/crm-cloud
 
-            # ── 4. Pull latest codea ───────────────────────────────────
+            # ── 4. Pull latest code ────────────────────────────────────
+            GIT_URL="https://${{ github.actor }}:${{ secrets.REGISTRY_TOKEN }}@github.com/${{ github.repository }}.git"
             if [ ! -d /opt/crm-cloud/.git ]; then
-              git clone https://github.com/${{ github.repository }}.git /opt/crm-cloud
+              git clone "$GIT_URL" /opt/crm-cloud
             fi
             cd /opt/crm-cloud
+            git remote set-url origin "$GIT_URL"
             git fetch origin main
             git reset --hard origin/main
 
