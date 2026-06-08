@@ -262,7 +262,7 @@ jobs:
               echo "POSTGRES_DB=crmdb"
               echo "JWT_SECRET=crm-jwt-secret-key-production-2024!!"
               echo "JWT_EXPIRES=7d"
-              echo "CORS_ORIGIN=http://khuja.duckdns.org"
+              echo "CORS_ORIGIN=https://khuja.duckdns.org"
               echo "LOG_LEVEL=info"
               echo "HTTP_PORT=80"
             } > .env
@@ -297,19 +297,55 @@ jobs:
               sleep 3
             done
 
-            # ── 11. Start frontend + nginx ────────────────────────────
-            sudo docker compose up -d --no-deps frontend
-            sudo docker compose up -d --no-deps nginx
-            sleep 8
+            # ── 11. Get SSL certificate (port 80 is free — nginx not running yet) ─
+            sudo apt-get install -y certbot openssl 2>/dev/null
+            CERT_DIR="/etc/letsencrypt/live/khuja.duckdns.org"
+            if ! sudo test -f "${CERT_DIR}/fullchain.pem"; then
+              echo "Getting SSL certificate from Let's Encrypt..."
+              sudo certbot certonly --standalone \
+                -d khuja.duckdns.org \
+                --non-interactive --agree-tos \
+                --email admin@crmcloud.com \
+                --keep-until-expiring 2>/dev/null \
+              || {
+                echo "Certbot failed — creating self-signed cert as fallback..."
+                sudo mkdir -p "${CERT_DIR}"
+                sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+                  -keyout "${CERT_DIR}/privkey.pem" \
+                  -out "${CERT_DIR}/fullchain.pem" \
+                  -subj "/CN=khuja.duckdns.org" 2>/dev/null
+              }
+            else
+              echo "Certificate exists — renewing if near expiry..."
+              sudo certbot renew --quiet 2>/dev/null || true
+            fi
+            sudo mkdir -p /var/www/certbot
 
-            # ── 12. Verify deployment ─────────────────────────────────
+            # ── 12. Start frontend (wait healthy) ─────────────────────
+            sudo docker compose up -d --no-deps frontend
+            echo "Waiting for frontend to be healthy..."
+            for i in $(seq 1 20); do
+              if sudo docker compose ps frontend 2>/dev/null | grep -q "(healthy)"; then
+                echo "Frontend is healthy"
+                break
+              fi
+              echo "  attempt $i/20..."
+              sleep 3
+            done
+
+            # ── 13. Start nginx ───────────────────────────────────────
+            sudo docker compose up -d --no-deps nginx
+            sleep 10
+
+            # ── 14. Verify deployment ─────────────────────────────────
             HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/api/health 2>/dev/null || true)
             echo "Health check status: ${HTTP_STATUS}"
             if [ "$HTTP_STATUS" = "200" ]; then
               echo "Health check passed"
             else
-              echo "Health check returned ${HTTP_STATUS} — showing backend logs:"
-              sudo docker compose logs --tail=30 backend
+              echo "Health check returned ${HTTP_STATUS} — showing logs:"
+              sudo docker compose logs --tail=20 backend
+              sudo docker compose logs --tail=10 nginx
               exit 1
             fi
 
