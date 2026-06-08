@@ -247,18 +247,18 @@ jobs:
             export IMAGE_TAG=${{ needs.build.outputs.image-tag }}
             export REGISTRY=ghcr.io/$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
 
-            cat > .env << EOF
-IMAGE_TAG=${IMAGE_TAG}
-REGISTRY=${REGISTRY}
-POSTGRES_USER=crmuser
-POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }}
-POSTGRES_DB=crmdb
-JWT_SECRET=${{ secrets.JWT_SECRET }}
-JWT_EXPIRES=7d
-CORS_ORIGIN=http://khuja.duckdns.org
-LOG_LEVEL=info
-HTTP_PORT=80
-EOF
+            {
+              echo "IMAGE_TAG=${IMAGE_TAG}"
+              echo "REGISTRY=${REGISTRY}"
+              echo "POSTGRES_USER=crmuser"
+              echo "POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }}"
+              echo "POSTGRES_DB=crmdb"
+              echo "JWT_SECRET=${{ secrets.JWT_SECRET }}"
+              echo "JWT_EXPIRES=7d"
+              echo "CORS_ORIGIN=http://khuja.duckdns.org"
+              echo "LOG_LEVEL=info"
+              echo "HTTP_PORT=80"
+            } > .env
 
             # ── 7. Pull new images ────────────────────────────────────
             sudo docker compose pull backend frontend
