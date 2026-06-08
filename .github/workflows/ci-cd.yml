@@ -201,11 +201,17 @@ jobs:
 
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_ACTOR: ${{ github.actor }}
+          GH_REPO: ${{ github.repository }}
+          IMAGE_TAG: ${{ needs.build.outputs.image-tag }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
+          envs: GH_TOKEN,GH_ACTOR,GH_REPO,IMAGE_TAG
           script: |
             set -e
 
@@ -233,7 +239,7 @@ jobs:
             sudo chown "$USER":"$USER" /opt/crm-cloud
 
             # ── 4. Pull latest code ────────────────────────────────────
-            GIT_URL="https://${{ github.actor }}:${{ secrets.REGISTRY_TOKEN }}@github.com/${{ github.repository }}.git"
+            GIT_URL="https://${GH_ACTOR}:${GH_TOKEN}@github.com/${GH_REPO}.git"
             if [ ! -d /opt/crm-cloud/.git ]; then
               git clone "$GIT_URL" /opt/crm-cloud
             fi
@@ -243,19 +249,18 @@ jobs:
             git reset --hard origin/main
 
             # ── 5. Login to GitHub Container Registry ─────────────────
-            echo "${{ secrets.REGISTRY_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            echo "${GH_TOKEN}" | sudo docker login ghcr.io -u "${GH_ACTOR}" --password-stdin
 
             # ── 6. Set environment variables ──────────────────────────
-            export IMAGE_TAG=${{ needs.build.outputs.image-tag }}
-            export REGISTRY=ghcr.io/$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+            export REGISTRY=ghcr.io/$(echo "${GH_REPO}" | tr '[:upper:]' '[:lower:]')
 
             {
               echo "IMAGE_TAG=${IMAGE_TAG}"
               echo "REGISTRY=${REGISTRY}"
               echo "POSTGRES_USER=crmuser"
-              echo "POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }}"
+              echo "POSTGRES_PASSWORD=crmpassword123"
               echo "POSTGRES_DB=crmdb"
-              echo "JWT_SECRET=${{ secrets.JWT_SECRET }}"
+              echo "JWT_SECRET=crm-jwt-secret-key-production-2024!!"
               echo "JWT_EXPIRES=7d"
               echo "CORS_ORIGIN=http://khuja.duckdns.org"
               echo "LOG_LEVEL=info"
