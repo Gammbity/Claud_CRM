@@ -247,12 +247,18 @@ jobs:
             export IMAGE_TAG=${{ needs.build.outputs.image-tag }}
             export REGISTRY=ghcr.io/$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
 
-            # Write .env for docker compose (no leading spaces)
             cat > .env << EOF
-            IMAGE_TAG=${IMAGE_TAG}
-            REGISTRY=${REGISTRY}
-            EOF
-            sed -i 's/^[[:space:]]*//' .env
+IMAGE_TAG=${IMAGE_TAG}
+REGISTRY=${REGISTRY}
+POSTGRES_USER=crmuser
+POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }}
+POSTGRES_DB=crmdb
+JWT_SECRET=${{ secrets.JWT_SECRET }}
+JWT_EXPIRES=7d
+CORS_ORIGIN=http://khuja.duckdns.org
+LOG_LEVEL=info
+HTTP_PORT=80
+EOF
 
             # ── 7. Pull new images ────────────────────────────────────
             sudo docker compose pull backend frontend
@@ -260,14 +266,16 @@ jobs:
             # ── 8. Start postgres first (required by backend) ─────────
             sudo docker compose up -d postgres
             echo "Waiting for postgres to be healthy..."
-            timeout 60 sh -c \
+            timeout 90 sh -c \
               'until sudo docker compose ps postgres 2>/dev/null | grep -q "(healthy)"; do sleep 3; done' \
               || echo "Postgres health timeout — continuing anyway"
 
             # ── 9. Zero-downtime rolling backend update ───────────────
-            sudo docker compose up -d --no-deps --scale backend=2 backend
-            sleep 20
-            sudo docker compose up -d --no-deps --scale backend=1 backend
+            sudo docker compose up -d --no-deps backend
+            echo "Waiting for backend to be healthy..."
+            timeout 90 sh -c \
+              'until sudo docker compose ps backend 2>/dev/null | grep -q "(healthy)"; do sleep 3; done' \
+              || echo "Backend health timeout — continuing anyway"
 
             # ── 10. Update frontend ───────────────────────────────────
             sudo docker compose up -d --no-deps frontend
@@ -277,7 +285,18 @@ jobs:
             sleep 5
             sudo docker compose exec -T nginx nginx -s reload 2>/dev/null || true
 
-            # ── 12. Cleanup old images ─────────────────────────────────
+            # ── 12. Verify deployment ─────────────────────────────────
+            sleep 5
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/api/health || echo "000")
+            if [ "$HTTP_STATUS" = "200" ]; then
+              echo "Health check passed — HTTP $HTTP_STATUS"
+            else
+              echo "Health check returned HTTP $HTTP_STATUS — check logs"
+              sudo docker compose logs --tail=20 backend
+              exit 1
+            fi
+
+            # ── 13. Cleanup old images ─────────────────────────────────
             sudo docker image prune -f
 
             echo "Deployment complete — SHA: ${IMAGE_TAG}"
@@ -286,7 +305,7 @@ jobs:
         if: always()
         run: |
           if [ "${{ job.status }}" = "success" ]; then
-            echo "Deployment to EC2 succeeded — SHA: ${{ needs.build.outputs.image-tag }}"
+            echo "✅ Deployment to EC2 succeeded — SHA: ${{ needs.build.outputs.image-tag }}"
           else
-            echo "Deployment failed"
+            echo "❌ Deployment failed — SHA: ${{ needs.build.outputs.image-tag }}"
           fi
