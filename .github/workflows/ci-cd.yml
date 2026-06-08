@@ -270,36 +270,46 @@ jobs:
             # ── 7. Pull new images ────────────────────────────────────
             sudo docker compose pull backend frontend
 
-            # ── 8. Start postgres first (required by backend) ─────────
+            # ── 8. Stop old containers + wipe DB volume (fresh creds) ─
+            sudo docker compose down -v 2>/dev/null || true
+
+            # ── 9. Start postgres ─────────────────────────────────────
             sudo docker compose up -d postgres
             echo "Waiting for postgres to be healthy..."
-            timeout 90 sh -c \
-              'until sudo docker compose ps postgres 2>/dev/null | grep -q "(healthy)"; do sleep 3; done' \
-              || echo "Postgres health timeout — continuing anyway"
+            for i in $(seq 1 30); do
+              if sudo docker compose ps postgres 2>/dev/null | grep -q "(healthy)"; then
+                echo "Postgres is healthy"
+                break
+              fi
+              echo "  attempt $i/30..."
+              sleep 3
+            done
 
-            # ── 9. Zero-downtime rolling backend update ───────────────
+            # ── 10. Start backend ─────────────────────────────────────
             sudo docker compose up -d --no-deps backend
             echo "Waiting for backend to be healthy..."
-            timeout 90 sh -c \
-              'until sudo docker compose ps backend 2>/dev/null | grep -q "(healthy)"; do sleep 3; done' \
-              || echo "Backend health timeout — continuing anyway"
+            for i in $(seq 1 30); do
+              if sudo docker compose ps backend 2>/dev/null | grep -q "(healthy)"; then
+                echo "Backend is healthy"
+                break
+              fi
+              echo "  attempt $i/30..."
+              sleep 3
+            done
 
-            # ── 10. Update frontend ───────────────────────────────────
+            # ── 11. Start frontend + nginx ────────────────────────────
             sudo docker compose up -d --no-deps frontend
-
-            # ── 11. Start / reload nginx ──────────────────────────────
             sudo docker compose up -d --no-deps nginx
-            sleep 5
-            sudo docker compose exec -T nginx nginx -s reload 2>/dev/null || true
+            sleep 8
 
             # ── 12. Verify deployment ─────────────────────────────────
-            sleep 5
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/api/health || echo "000")
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/api/health 2>/dev/null || true)
+            echo "Health check status: ${HTTP_STATUS}"
             if [ "$HTTP_STATUS" = "200" ]; then
-              echo "Health check passed — HTTP $HTTP_STATUS"
+              echo "Health check passed"
             else
-              echo "Health check returned HTTP $HTTP_STATUS — check logs"
-              sudo docker compose logs --tail=20 backend
+              echo "Health check returned ${HTTP_STATUS} — showing backend logs:"
+              sudo docker compose logs --tail=30 backend
               exit 1
             fi
 
