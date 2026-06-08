@@ -155,8 +155,10 @@ async function main() {
     ],
   });
 
-  const order = await prisma.order.create({
-    data: {
+  const order = await prisma.order.upsert({
+    where: { orderNumber: 'ORD-2024-0001' },
+    update: {},
+    create: {
       orderNumber: 'ORD-2024-0001',
       customerId: customers[0].id,
       assignedTo: sales1.id,

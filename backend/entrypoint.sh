@@ -15,7 +15,7 @@ p.user.count()
 
 if [ "$USER_COUNT" = "0" ]; then
   echo "Database is empty — running seed..."
-  node dist/seed/prisma/seed.js
+  node dist/seed/seed.js
   echo "Seed completed."
 else
   echo "Database already has data (${USER_COUNT} users) — skipping seed."
