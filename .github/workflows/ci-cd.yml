@@ -161,7 +161,7 @@ jobs:
           echo "frontend=${{ env.REGISTRY }}/${REPO_LC}/crm-frontend" >> $GITHUB_OUTPUT
 
       - name: Build & push backend
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./backend
           push: true
@@ -173,7 +173,7 @@ jobs:
           target: production
 
       - name: Build & push frontend
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./frontend
           push: true
@@ -195,6 +195,9 @@ jobs:
     needs: build
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment: production
+    permissions:
+      contents: read
+      packages: read
 
     steps:
       - uses: actions/checkout@v4
