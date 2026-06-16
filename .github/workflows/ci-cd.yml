@@ -39,7 +39,7 @@ jobs:
 
       - name: Install & lint frontend
         working-directory: frontend
-        run: npm ci && npm run lint
+        run: npm install && npm run lint
 
   # ─────────────────────────────────────────
   # Stage 2: Test (with PostgreSQL service)
