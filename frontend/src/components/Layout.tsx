@@ -28,7 +28,7 @@ export default function Layout() {
         <div className="px-6 py-5 border-b border-gray-700">
           <div className="flex items-center gap-2">
             <Cloud className="w-6 h-6 text-blue-400" />
-            <span className="text-white font-bold text-lg">CRM Cloud</span>
+            <span className="text-white font-bold text-lg">My Cloud Boom</span>
           </div>
           <p className="text-gray-400 text-xs mt-1">Wholesale Fashion</p>
         </div>
